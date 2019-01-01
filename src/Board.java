@@ -4,43 +4,67 @@ import java.util.Arrays;
 
 public class Board
 {
+	private int[][] offsets;
 	private Cell[][] array;
-	private int gens, cutoutSize;
-	private Shape shape;
+	private int gens, cutoutSize, height, width;
+	private CellShape cellShape;
 
-	public Board(boolean[][] a, Shape s)
+	public Board(int height, int width, CellShape s)
 	{
-		array = new Cell[a.length][a[0].length];
+		this.height = height;
+		this.width = width;
+
+		array = new Cell[height][width];
 		gens = 0;
-		shape = s;
+		cellShape = s;
 		cutoutSize = 5;
 
-		for(int x = 0; x < a.length; x++)
-			for(int y = 0; y < a[0].length; y++)
-				array[x][y] = new Cell(a[x][y], shape);
+		for(int x = 0; x < height; x++)
+			for(int y = 0; y < width; y++)
+				array[x][y] = new Cell(false);
+
+		if(cellShape == CellShape.SQUARE)
+		{
+			// Create array of offsets that can be used to access all cells around given cell
+			offsets = new int[][] {
+				{1, -1},
+				{1, 0},
+				{1, 1},
+				{0, -1},
+				{0, 1},
+				{-1, -1},
+				{-1, 0},
+				{-1, 1}
+			};
+		}
 	}
 
-	/* This program handles the problem of having a finite board size by only showing a smaller portion of a larger array which has boundaries.
-		This way, it will seem as if the board is infinite, but only a certain portion is visible to the user.
-	*/
+	
 	public void generateNextGen()
 	{
 		Cell[][] newGen = new Cell[array.length][array[0].length];
 
 		for(int x = 0; x < array.length; x++)
 		{
-			for(int y = 0; y < array.length; y++)
+			for(int y = 0; y < array[0].length; y++)
 			{
 				int neighbors = getNeighbors(x, y);
 				Cell currentCell = getCell(x, y);
 
 				// different conditions separated for clarity, could be optimized
 				if(currentCell.isAlive() && neighbors >= 2 && neighbors <= 3)
-					newGen[x][y] = new Cell(true, shape);
-				else if(!currentCell.isAlive() && neighbors == 3)
-					newGen[x][y] = new Cell(true, shape);
+					newGen[x][y] = new Cell(true);
+
+				// Normal game of life
+				// else if(!currentCell.isAlive() && neighbors == 3)
+				// 	newGen[x][y] = new Cell(true);
+
+				// "HighLife" variation
+				else if(!currentCell.isAlive() && (neighbors == 3 || neighbors == 6))
+					newGen[x][y] = new Cell(true);
+
 				else
-					newGen[x][y] = new Cell(false, shape);
+					newGen[x][y] = new Cell(false);
 			}
 		}
 
@@ -55,7 +79,7 @@ public class Board
 		Cell center = getCell(x, y);
 
 		// Loop through all cells around the given location
-		for(int[] offset : center.getOffsets())
+		for(int[] offset : offsets)
 		{
 			try
 			{
@@ -66,6 +90,11 @@ public class Board
 		}
 
 		return numAlive;
+	}
+
+	public void setCell(int x, int y, boolean state)
+	{
+		array[x][y].setState(state);
 	}
 
 	public Cell getCell(int x, int y)
@@ -83,15 +112,21 @@ public class Board
 		return array[0].length;
 	}
 
-	// create a cutout of the original array
-	public Cell[][] getBoard()
+	public int getCutoutSize()
 	{
-		Cell[][] newArray = new Cell[array.length - cutoutSize * 2][array[0].length - cutoutSize * 2];
+		return cutoutSize;
+	}
 
-		for(int x = 0; x < newArray.length; x++)
-			for(int y = 0; y < newArray[0].length; y++)
-				newArray[x][y] = array[x + cutoutSize][y + cutoutSize];	
+	public int getGenerations()
+	{
+		return gens;
+	}
 
-		return newArray;
+	public void reset()
+	{
+		for(int x = 0; x < height; x++)
+			for(int y = 0; y < width; y++)
+				array[x][y] = new Cell(false);
+		gens = 0;
 	}
 }
