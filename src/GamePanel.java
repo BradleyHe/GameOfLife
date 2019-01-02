@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
 
 public class GamePanel extends JPanel
 {
@@ -14,20 +15,19 @@ public class GamePanel extends JPanel
 	/* This program handles the problem of having a finite board size by only showing a smaller portion of a larger array which has boundaries.
 		This way, it will seem as if the board is infinite, but only a certain portion is visible to the user.
 	*/
-	public GamePanel(int height, int width)
+	public GamePanel(int height, int width, ArrayList<Integer> birth, ArrayList<Integer> survive)
 	{
-		int smaller = height > width ? width : height;
-		int sizeOfButton = (int)(63 - 1.4 * smaller + 0.01 * Math.pow(smaller, 2));
+		double smaller = 1000.0 / height > 1900.0 / width ? 1900.0 / width : 1000.0 / height;
 
 		auto = new Timer(100, new ActionListener() {
 			public void actionPerformed(ActionEvent e)
 			{
-				moveForward();
+				nextIteration();
 			}
 		});
 
 		grid = new JButton[height][width];
-		board = new Board(height + 10, width + 10, CellShape.SQUARE);
+		board = new Board(height + 10, width + 10, birth, survive, CellShape.SQUARE);
 
 		setLayout(new BorderLayout());
 
@@ -40,7 +40,7 @@ public class GamePanel extends JPanel
 			{
 				grid[x][y] = new JButton();
 				grid[x][y].addActionListener(new ButtonListener());
-				grid[x][y].setPreferredSize(new Dimension(sizeOfButton, sizeOfButton));
+				grid[x][y].setPreferredSize(new Dimension((int)smaller, (int)smaller));
 				grid[x][y].setBackground(Color.WHITE);
 				bottomPanel.add(grid[x][y]);
 			}
@@ -83,7 +83,7 @@ public class GamePanel extends JPanel
 		genLabel.setText("Gen 0");
 	}
 
-	public void moveForward()
+	public void nextIteration()
 	{
 		board.generateNextGen();
 		genLabel.setText("Gen " + board.getGenerations());
@@ -95,7 +95,7 @@ public class GamePanel extends JPanel
 		public void actionPerformed(ActionEvent e)
 		{
 			if(e.getSource() == forward)
-				moveForward();
+				nextIteration();
 			else if(e.getSource() == clear)
 				clear();
 			else if(e.getSource() == startAuto)

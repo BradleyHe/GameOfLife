@@ -1,19 +1,19 @@
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
 
 public class Board
 {
+	private ArrayList<Integer> birthCondition, surviveCondition;
 	private int[][] offsets;
 	private Cell[][] array;
 	private int gens, cutoutSize, height, width;
 	private CellShape cellShape;
 
-	public Board(int height, int width, CellShape s)
+	public Board(int height, int width, ArrayList<Integer> birth, ArrayList<Integer> survive, CellShape s)
 	{
 		this.height = height;
 		this.width = width;
-
+		birthCondition = birth;
+		surviveCondition = survive;
 		array = new Cell[height][width];
 		gens = 0;
 		cellShape = s;
@@ -38,7 +38,6 @@ public class Board
 			};
 		}
 	}
-
 	
 	public void generateNextGen()
 	{
@@ -50,21 +49,25 @@ public class Board
 			{
 				int neighbors = getNeighbors(x, y);
 				Cell currentCell = getCell(x, y);
+				newGen[x][y] = new Cell(false);
 
-				// different conditions separated for clarity, could be optimized
-				if(currentCell.isAlive() && neighbors >= 2 && neighbors <= 3)
-					newGen[x][y] = new Cell(true);
+				if(currentCell.isAlive())
+				{
+					for(int num : surviveCondition)
+					{
+						if(neighbors == num)
+							newGen[x][y].setState(true);
+					}
+				}
 
-				// Normal game of life
-				// else if(!currentCell.isAlive() && neighbors == 3)
-				// 	newGen[x][y] = new Cell(true);
-
-				// "HighLife" variation
-				else if(!currentCell.isAlive() && (neighbors == 3 || neighbors == 6))
-					newGen[x][y] = new Cell(true);
-
-				else
-					newGen[x][y] = new Cell(false);
+				else if(!currentCell.isAlive()) 
+				{
+					for(int num : birthCondition)
+					{
+						if(neighbors == num)
+							newGen[x][y] = new Cell(true);
+					}
+				}
 			}
 		}
 
