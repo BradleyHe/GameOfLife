@@ -3,14 +3,25 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
-public class MainFrame extends JFrame
+public class GameRunner extends JFrame
 {
 	private GamePanel gamePanel;
 	private InputPanel inputPanel;
 	private JButton enter;
 	private JLabel info;
 
-	public MainFrame()
+	public static void main(String[] args) 
+ 	{
+    java.awt.EventQueue.invokeLater(new Runnable() {
+      public void run() 
+      {
+        GameRunner frame = new GameRunner();
+        frame.setVisible(true);
+      }
+    });
+	}
+
+	public GameRunner()
 	{
 		info = new JLabel("Select the desired birth and survival conditions.");
 		info.setHorizontalAlignment(SwingConstants.CENTER);
@@ -27,7 +38,6 @@ public class MainFrame extends JFrame
 		pack();
 		setLocationRelativeTo(null);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setVisible(true);
 	}
 
 	private class ButtonListener implements ActionListener

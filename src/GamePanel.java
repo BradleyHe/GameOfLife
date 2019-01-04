@@ -1,93 +1,229 @@
 import javax.swing.*;
+import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 
 public class GamePanel extends JPanel
 {
+	private GridPanel gridPanel;
+	private Rectangle[][] cells;
 	private Board board;
-	private JButton[][] grid;
-	private JButton forward, clear, startAuto;
+	private JComboBox backgroundColorBox, cellColorBox;
+	private JButton forward, clear, startAuto, gridEnable;
 	private JLabel genLabel;
-	private JPanel topPanel, bottomPanel;
+	private JPanel topPanel, graphicsPanel, iterationPanel;
+	private JSlider timerSlider;
 	private Timer auto;
+	private Color backgroundColor, cellColor;
+	private boolean gridOn;
 
 	/* This program handles the problem of having a finite board size by only showing a smaller portion of a larger array which has boundaries.
 		This way, it will seem as if the board is infinite, but only a certain portion is visible to the user.
 	*/
-	public GamePanel(int height, int width, ArrayList<Integer> birth, ArrayList<Integer> survive)
+	public GamePanel(int row, int col, ArrayList<Integer> birth, ArrayList<Integer> survive)
 	{
-		double smaller = 1000.0 / height > 1900.0 / width ? 1900.0 / width : 1000.0 / height;
+		setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+		setBackground(Color.WHITE);
 
-		auto = new Timer(100, new ActionListener() {
-			public void actionPerformed(ActionEvent e)
-			{
-				nextIteration();
-			}
-		});
-
-		grid = new JButton[height][width];
-		board = new Board(height + 10, width + 10, birth, survive, CellShape.SQUARE);
-
-		setLayout(new BorderLayout());
-
-		// set up panel that will house the grid
-		bottomPanel = new JPanel(new GridLayout(height, width));
-
-		for(int x = 0; x < height; x++)
-		{
-			for(int y = 0; y < width; y++)
-			{
-				grid[x][y] = new JButton();
-				grid[x][y].addActionListener(new ButtonListener());
-				grid[x][y].setPreferredSize(new Dimension((int)smaller, (int)smaller));
-				grid[x][y].setBackground(Color.WHITE);
-				bottomPanel.add(grid[x][y]);
-			}
-		}
-
-		genLabel = new JLabel("Gen 0");
+		gridOn = true;
+		board = new Board(row + 10, col + 10, birth, survive, CellShape.SQUARE);
+		genLabel = new JLabel("Gen 0    ");
 		forward = new JButton("Next Generation");
 		forward.addActionListener(new ButtonListener());
 		clear = new JButton("Clear");
 		clear.addActionListener(new ButtonListener());
 		startAuto = new JButton("Auto");
 		startAuto.addActionListener(new ButtonListener());
+		gridEnable = new JButton("Grid On/Off");
+		gridEnable.addActionListener(new ButtonListener());
+
+		auto = new Timer(250, new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				nextIteration();
+			}
+		});
+
+		timerSlider = new JSlider(JSlider.HORIZONTAL, 0, 500, 250);
+		timerSlider.setMajorTickSpacing(100);
+		timerSlider.setMinorTickSpacing(25);
+		timerSlider.setPaintTicks(true);
+		timerSlider.setPaintLabels(true);
+		timerSlider.addChangeListener(new ChangeListener(){
+			public void stateChanged(ChangeEvent e)
+			{
+				auto.setDelay(timerSlider.getValue());
+			}
+		});
+
+		gridPanel = new GridPanel(row, col);
+		gridPanel.setBackground(Color.WHITE);
+
+		backgroundColorBox = new JComboBox(new String[] {"White", "Black"});
+		backgroundColorBox.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				updateColors();
+				gridPanel.setBackground(backgroundColor);
+				setBackground(backgroundColor);
+			}
+		});
+
+		cellColorBox = new JComboBox(new String[] {"White", "Black", "Green"});
+		cellColorBox.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e)
+			{
+				updateColors();
+			}
+		});
+
+		graphicsPanel = new JPanel();
+		graphicsPanel.setBackground(Color.WHITE);
+		graphicsPanel.add(clear);
+		graphicsPanel.add(gridEnable);
+		graphicsPanel.add(new JLabel("Background Color: "));
+		graphicsPanel.add(backgroundColorBox);
+		graphicsPanel.add(new JLabel("Cell Color: "));
+		graphicsPanel.add(cellColorBox);
+		graphicsPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+		iterationPanel = new JPanel();
+		iterationPanel.setBackground(Color.WHITE);
+		iterationPanel.add(forward);
+		iterationPanel.add(startAuto);
+		iterationPanel.add(timerSlider);
+		iterationPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
 
 		topPanel = new JPanel();
+		topPanel.setBackground(Color.WHITE);
 		topPanel.add(genLabel);	
-		topPanel.add(forward);
-		topPanel.add(clear);
-		topPanel.add(startAuto);
+		topPanel.add(graphicsPanel);
+		topPanel.add(iterationPanel);
 		
-		add(topPanel, BorderLayout.NORTH);
-		add(bottomPanel, BorderLayout.CENTER);
+		add(topPanel);
+		add(gridPanel);
+
+		gridPanel.setPreferredSize(gridPanel.getMaximumSize());
 	}
 
-	public void update()
-  {
-  	for(int x = 0; x < grid.length; x++)
-		{
-			for(int y = 0; y < grid[0].length; y++)
-			{
-				grid[x][y].setBackground(board.getCell(x + board.getCutoutSize(), y + board.getCutoutSize()).isAlive() ? Color.BLACK : Color.WHITE);
-			}
-		}
-	}
-
-	public void clear()
+	// GridPanel handles the task of drawing the board out.
+	public class GridPanel extends JPanel
 	{
-		board.reset();
-		auto.stop();
-		update();
-		genLabel.setText("Gen 0");
+		private int rowCount, columnCount, cellSize;
+
+		public GridPanel(int rowCount, int columnCount)
+		{
+			// Generate cellSize based on how many cells high the board is
+		 	cellSize = rowCount < 48 ? 20 : 950 / rowCount;
+
+			this.rowCount = rowCount;
+			this.columnCount = columnCount;
+
+			MouseListener clickHandler = new MouseListener() {
+				public void mouseClicked(MouseEvent e) {}
+
+				public void mouseReleased(MouseEvent e) {}
+
+				public void mousePressed(MouseEvent e) 
+				{
+					int column = e.getX() / cellSize;
+					int row = e.getY() / cellSize;
+				
+					board.flipCell(row + board.getCutoutSize(), column + board.getCutoutSize());
+
+					repaint();
+				}
+
+				public void mouseExited(MouseEvent e) {}
+
+				public void mouseEntered(MouseEvent e) {}
+			};
+			addMouseListener(clickHandler);
+		}
+
+		@Override
+		public Dimension getMaximumSize()
+		{
+			// need to increment by 1 so the entire grid gets shown
+			return new Dimension(columnCount * cellSize + 1, rowCount * cellSize + 1);
+		}
+
+		public void paintComponent(Graphics g)
+		{
+			super.paintComponent(g);
+
+			Graphics2D g2d = (Graphics2D)g.create();
+
+			int panelWidth = getWidth();
+			int panelHeight = getHeight();
+			int cellSize = panelHeight / rowCount;
+
+			if(cells == null)
+			{
+				cells = new Rectangle[rowCount][columnCount];
+				for(int row = 0; row < rowCount; row++)
+					for(int col = 0; col < columnCount; col++)
+						cells[row][col] = new Rectangle(col * cellSize, row * cellSize, cellSize, cellSize);
+			}
+
+			g2d.setColor(cellColor);
+
+			// draw all live cells
+			for(int row = 0; row < rowCount; row++)
+				for(int col = 0; col < columnCount; col++)
+					if(board.getCellState(row + board.getCutoutSize(), col + board.getCutoutSize()))
+						g2d.fill(cells[row][col]);
+
+			if(gridOn)
+			{
+				g2d.setColor(Color.GRAY);
+				for(Rectangle[] arr : cells)
+					for(Rectangle cell : arr)
+						g2d.draw(cell);
+			}
+			g2d.dispose();
+		}
 	}
 
 	public void nextIteration()
 	{
 		board.generateNextGen();
 		genLabel.setText("Gen " + board.getGenerations());
-		update();
+		gridPanel.repaint();
+
+		// needed to reduce lag on linux 
+		if(System.getProperty("os.name").equals("Linux"))
+			Toolkit.getDefaultToolkit().sync();
+	}
+
+	public void updateColors()
+	{
+		switch((String)backgroundColorBox.getSelectedItem())
+		{
+			case "Black":
+				backgroundColor = Color.BLACK;
+				break;
+
+			default:
+				backgroundColor = Color.WHITE;
+				break;
+		}
+
+		switch((String)cellColorBox.getSelectedItem())
+		{
+			case "White":
+				cellColor = Color.WHITE;
+				break;
+
+			case "Green":
+				cellColor = Color.GREEN;
+				break;
+
+			default:
+				cellColor = Color.BLACK;
+				break;
+		}
 	}
 
 	private class ButtonListener implements ActionListener
@@ -95,9 +231,18 @@ public class GamePanel extends JPanel
 		public void actionPerformed(ActionEvent e)
 		{
 			if(e.getSource() == forward)
+			{
 				nextIteration();
+			}
+
 			else if(e.getSource() == clear)
-				clear();
+			{
+				board.reset();
+				auto.stop();
+				genLabel.setText("Gen 0    ");
+				gridPanel.repaint();
+			}
+
 			else if(e.getSource() == startAuto)
 			{
 				if(auto.isRunning())
@@ -106,27 +251,11 @@ public class GamePanel extends JPanel
 					auto.start();
 			}
 
-			else
+			else if(e.getSource() == gridEnable)
 			{
-				int[] location = getLocation((JButton)(e.getSource()));
-				Cell selected = board.getCell(location[0] + board.getCutoutSize(), location[1] + board.getCutoutSize());
-				selected.setState(selected.isAlive() ? false : true);
-				update();
-			}	
-		}	
-	}
-
-	public int[] getLocation(JButton c)
-	{
-		for(int x = 0; x < grid.length; x++)
-		{
-			for(int y = 0; y < grid[0].length; y++)
-			{
-				if(grid[x][y] == c)
-					return new int[] {x, y};
+				gridOn = !gridOn;
+				gridPanel.repaint();
 			}
-		}
-
-		return null;
+		}	
 	}
 }

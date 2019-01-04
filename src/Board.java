@@ -95,14 +95,19 @@ public class Board
 		return numAlive;
 	}
 
-	public void setCell(int x, int y, boolean state)
+	public void flipCell(int x, int y)
 	{
-		array[x][y].setState(state);
+		array[x][y].setState(!array[x][y].isAlive());
 	}
 
 	public Cell getCell(int x, int y)
 	{
 		return array[x][y];
+	}
+
+	public boolean getCellState(int x, int y)
+	{
+		return getCell(x, y).isAlive();
 	}
 
 	public int getHeight()
