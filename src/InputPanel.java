@@ -57,9 +57,9 @@ public class InputPanel extends JPanel
 	{
 		try
 		{
-			Integer.parseInt(height.getText());
-			Integer.parseInt(width.getText());
-			return true;
+			int a = Integer.parseInt(height.getText());
+			int b = Integer.parseInt(width.getText());
+			return !(a < 10 || b < 10);
 		}
 
 		catch(Exception e)

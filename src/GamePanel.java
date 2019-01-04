@@ -10,7 +10,7 @@ public class GamePanel extends JPanel
 	private Rectangle[][] cells;
 	private Board board;
 	private JComboBox backgroundColorBox, cellColorBox;
-	private JButton forward, clear, startAuto, gridEnable;
+	private JButton forward, clear, startAuto, gridEnable, random;
 	private JLabel genLabel;
 	private JPanel topPanel, graphicsPanel, iterationPanel;
 	private JSlider timerSlider;
@@ -37,6 +37,8 @@ public class GamePanel extends JPanel
 		startAuto.addActionListener(new ButtonListener());
 		gridEnable = new JButton("Grid On/Off");
 		gridEnable.addActionListener(new ButtonListener());
+		random = new JButton("Random");
+		random.addActionListener(new ButtonListener());
 
 		auto = new Timer(250, new ActionListener() {
 			public void actionPerformed(ActionEvent e)
@@ -100,6 +102,7 @@ public class GamePanel extends JPanel
 		topPanel.add(genLabel);	
 		topPanel.add(graphicsPanel);
 		topPanel.add(iterationPanel);
+		topPanel.add(random);
 		
 		add(topPanel);
 		add(gridPanel);
@@ -254,6 +257,22 @@ public class GamePanel extends JPanel
 			else if(e.getSource() == gridEnable)
 			{
 				gridOn = !gridOn;
+				gridPanel.repaint();
+			}
+
+			else if(e.getSource() == random)
+			{
+				int height = board.getHeight();
+				int width = board.getWidth();
+
+				for(int row = -5; row <= 5; row++)
+				{
+					for(int col = -5; col <= 5; col++)
+					{
+						if(Math.random() > 0.5)
+							board.flipCell(height / 2 + row, width / 2 + col);
+					}
+				}
 				gridPanel.repaint();
 			}
 		}	
