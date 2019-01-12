@@ -16,6 +16,7 @@ public class GameRunner extends JFrame
       public void run() 
       {
         GameRunner frame = new GameRunner();
+        setLocationRelativeTo(null);
         frame.setVisible(true);
       }
     });

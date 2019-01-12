@@ -108,6 +108,7 @@ public class GamePanel extends JPanel
 		add(gridPanel);
 
 		gridPanel.setPreferredSize(gridPanel.getMaximumSize());
+		setPreferredSize(getPreferredSize());
 	}
 
 	// GridPanel handles the task of drawing the board out.
@@ -117,8 +118,10 @@ public class GamePanel extends JPanel
 
 		public GridPanel(int rowCount, int columnCount)
 		{
+			Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
 			// Generate cellSize based on how many cells high the board is
-		 	cellSize = rowCount < 48 ? 20 : 950 / rowCount;
+		 	cellSize = rowCount < (screenSize.getHeight() - screenSize.getHeight() / 10) / 20 ? 20 : (int)(screenSize.getHeight() - screenSize.getHeight() / 10) / rowCount;
 
 			this.rowCount = rowCount;
 			this.columnCount = columnCount;
@@ -266,13 +269,9 @@ public class GamePanel extends JPanel
 				int width = board.getWidth();
 
 				for(int row = -5; row <= 5; row++)
-				{
 					for(int col = -5; col <= 5; col++)
-					{
 						if(Math.random() > 0.5)
 							board.flipCell(height / 2 + row, width / 2 + col);
-					}
-				}
 				gridPanel.repaint();
 			}
 		}	
